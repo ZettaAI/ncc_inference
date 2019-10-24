@@ -112,18 +112,18 @@ def work(tq):
 
 if __name__ == "__main__":
     tq = TaskQueue(sys.argv[2])
-    #tq = MockTaskQueue()
     if (sys.argv[1] == 'worker'):
         work(tq)
     elif sys.argv[1] == 'master':
         # w000ohhooooo
         start = 14780
         end = 27883
+
         for i in range(start, end):
             tq.insert(NormalizeTask(i, 1 + i))
+        #work(tq)
         st()
 
-        #work(tq)
 
      #t = NormalizeTask(15000, 16000)
      #t.execute()

@@ -12,6 +12,7 @@ import cloudvolume as cv
 
 from pdb import set_trace as st
 from helpers import normalize, create_model, get_np
+from taskqueue import RegisteredTask, MockTaskQueue, TaskQueue
 
 class NCCTask(RegisteredTask):
   def __init__(self, start_section=None, end_section=None,
@@ -28,11 +29,12 @@ class NCCTask(RegisteredTask):
   def execute(self):
     if self.start_section and self.end_section:
         ncc_section_range(self.start_section, self.end_section,
-                self.img_dst_cv_path, self.img_src_cv_path, self.resin_cv_path)
+                self.path_template)
     else:
       print(self)
 
 def ncc_section_range(start_section, end_section, path_template):
+    img_in_out_mip = [(6, 6), (6, 7), (7, 8)]
     for  img_in_mip, img_out_mip in img_in_out_mip:
         pyramid_name = "ncc_m{}".format(img_out_mip)
         if img_out_mip == 6:
@@ -151,12 +153,24 @@ def ncc_section_range(start_section, end_section, path_template):
             print (e - s, " sec")
 
 
+def work(tq):
+    tq.poll(lease_Seconds=int(300))
+
 if __name__ == "__main__":
     tq = TaskQueue(sys.argv[2])
     if (sys.argv[1] == 'worker'):
-        tq.poll(lease_Seconds=int(LEASE_SECONDS))
+        work(tq)
     elif sys.argv[1] == 'master':
+        # w000ohhooooo
+        start = 14780
+        end = 27883
+        for i in range(start, end):
+            tq.insert(NCCTask(i, 1 + i))
+        #work(tq)
         st()
 
+
+     #t = NormalizeTask(15000, 16000)
+     #t.execute()
      #t = NormalizeTask(15000, 16000)
      #t.execute()
