@@ -6,13 +6,15 @@ import numpy as np
 import time
 import sys
 import os
+import scipy
+from scipy import misc
 
 from copy import deepcopy
 
 from helpers import get_np
 from augment import set_up_transformation, generate_transform, apply_transform
 
-from taskqueue import RegisteredTask
+from taskqueue import RegisteredTask, MockTaskQueue, TaskQueue
 
 class NormalizeTask(RegisteredTask):
   def __init__(self, start_section=None, end_section=None,
@@ -105,12 +107,23 @@ def normalize_section_range(start_section, end_section,
         e = time.time()
         print (e - s, " sec")
 
+def work(tq):
+    tq.poll(lease_Seconds=int(300))
+
 if __name__ == "__main__":
     tq = TaskQueue(sys.argv[2])
+    #tq = MockTaskQueue()
     if (sys.argv[1] == 'worker'):
-        tq.poll(lease_Seconds=int(LEASE_SECONDS))
+        work(tq)
     elif sys.argv[1] == 'master':
+        # w000ohhooooo
+        start = 14780
+        end = 27883
+        for i in range(start, end):
+            tq.insert(NormalizeTask(i, 1 + i))
         st()
+
+        #work(tq)
 
      #t = NormalizeTask(15000, 16000)
      #t.execute()

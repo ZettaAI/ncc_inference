@@ -10,6 +10,7 @@ import numpy as np
 from numpy import random
 from copy import copy, deepcopy
 import six
+import scipy
 
 from pdb import set_trace as st
 
