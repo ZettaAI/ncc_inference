@@ -1,5 +1,4 @@
 import cloudvolume as cv
-import scipy
 import json
 import torch
 import numpy as np
@@ -13,18 +12,43 @@ from copy import deepcopy
 from helpers import get_np
 from augment import set_up_transformation, generate_transform, apply_transform
 
+from taskqueue import RegisteredTask
+
+class NormalizeTask(RegisteredTask):
+  def __init__(self, start_section=None, end_section=None,
+    img_src_cv_path = 'gs://seunglab_minnie_phase3/alignment/unaligned/m6_normalized',
+    img_src_cv_path = 'gs://seunglab_minnie_phase3/alignment/unaligned',
+    resin_cv_path = 'gs://seunglab_minnie_phase3/alignment/unaligned/resin_mask'
+                ):
+    super(NormalizeTask, self).__init__(txt)
+    # attributes passed to super().__init__ are automatically assigned
+    # use this space to perform additional processing such as:
+    self.start_section = int(start_section)
+    self.end_section = int(end_section)
+
+    self.img_dst_cv_path = img_dst_cv_path
+    self.img_src_cv_path = img_src_cv_path
+    self.resin_cv_path = resin_cv_path
+
+  def execute(self):
+    if self.start_section and self.end_section:
+
+    else:
+      print(self)
+
 start_section = int(sys.argv[1])
 end_section = int(sys.argv[2])
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]=sys.argv[3]
 
-
-
-################### MINNIE!!
-img_dst_cv_path = 'gs://microns-seunglab/minnie_v4/processed/m6_normalized_test'
-img_src_cv_path = 'gs://microns-seunglab/minnie_v4/raw'
-resin_cv_path = 'gs://microns-seunglab/minnie_v3/alignment/sergiy_resin_mask'
+img_src_cv_path = 'gs://seunglab_minnie_phase3/alignment/unaligned/m6_normalized'
+img_src_cv_path = 'gs://seunglab_minnie_phase3/alignment/unaligned'
+resin_cv_path = 'gs://seunglab_minnie_phase3/alignment/unaligned/resin_mask'
+if len(sys.argv) > 4:
+    img_dst_cv_path = sys.argv[4] + '/m6_normalized'
+    img_src_cv_path = sys.argv[5]
+    resin_cv_path = sys.argv[6]
 resin_mip = 8
 img_mip = 6
 

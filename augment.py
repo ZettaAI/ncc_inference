@@ -9,7 +9,6 @@ import json
 import numpy as np
 from numpy import random
 from copy import copy, deepcopy
-import skimage
 import six
 
 from pdb import set_trace as st
