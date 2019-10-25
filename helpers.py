@@ -1,15 +1,21 @@
-import numpy as np
-import torch
-
 import os
 
 import artificery
+import torch
+
 
 def get_np(pt):
     return pt.cpu().detach().numpy()
 
-def normalize(img, per_feature_center=True, per_feature_var=False, eps=1e-5,
-        mask=None, mask_fill=None):
+
+def normalize(
+    img,
+    per_feature_center=True,
+    per_feature_var=False,
+    eps=1e-5,
+    mask=None,
+    mask_fill=None,
+):
 
     img_out = img.clone()
     if mask is not None:
@@ -55,8 +61,6 @@ def normalize(img, per_feature_center=True, per_feature_var=False, eps=1e-5,
     return img_out
 
 
-
-
 def create_model(name, checkpoint_folder):
     a = artificery.Artificery()
 
@@ -68,5 +72,3 @@ def create_model(name, checkpoint_folder):
         my_p.load_state_dict(torch.load(checkpoint_path))
     my_p.name = name
     return my_p.cuda()
-
-

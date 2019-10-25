@@ -1,3 +1,3 @@
 #!/bin/bash
-docker build -t sergiypopo/ncc_inference .
-docker push sergiypopo/ncc_inference
+docker build -t seunglab/ncc_inference .
+docker push seunglab/ncc_inference

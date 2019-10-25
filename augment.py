@@ -1,22 +1,23 @@
+import json
+import time
+from copy import copy, deepcopy
+from pdb import set_trace as st
+
+import numpy as np
+import six
+from numpy import random
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
 import torchvision
+from torch.autograd import Variable
 
-import time
-import json
-import numpy as np
-from numpy import random
-from copy import copy, deepcopy
-import six
-import scipy
-
-from pdb import set_trace as st
 
 def get_brightness_mask(img, low_cutoff, high_cutoff):
-    result = (img >= low_cutoff)* (img <= high_cutoff)
+    result = (img >= low_cutoff) * (img <= high_cutoff)
     return result.type(torch.cuda.FloatTensor)
+
 
 def generate_transform(transform_def, dataset_mip, output_mip):
     transform = [ToFloatTensor()]
@@ -26,79 +27,112 @@ def generate_transform(transform_def, dataset_mip, output_mip):
         if mip in transform_def or str(mip) in transform_def:
             for ot in transform_def[mip]:
                 t = deepcopy(ot)
-                trans_type = t['type']
-                del t['type']
-                if trans_type == 'warp':
-                    transform.append(RandomWarp(difficulty=t["difficulty"],
-                                                max_disp=t["max_disp"],
-                                                min_disp=t["min_disp"],
-                                                prob=t["prob"],
-                                                randomize_d=t["randomize_d"],
-                                        random_epicenters=t["random_epicenters"]))
-                elif trans_type == 'preprocess':
+                trans_type = t["type"]
+                del t["type"]
+                if trans_type == "warp":
+                    transform.append(
+                        RandomWarp(
+                            difficulty=t["difficulty"],
+                            max_disp=t["max_disp"],
+                            min_disp=t["min_disp"],
+                            prob=t["prob"],
+                            randomize_d=t["randomize_d"],
+                            random_epicenters=t["random_epicenters"],
+                        )
+                    )
+                elif trans_type == "preprocess":
                     transform.append(Preprocess(**t))
-                elif trans_type == 'preprocessor_net':
+                elif trans_type == "preprocessor_net":
                     transform.append(PreprocessorNet(**t))
-                elif trans_type == 'sergiynorm':
+                elif trans_type == "sergiynorm":
                     transform.append(SergiyNorm(**t))
-                elif trans_type == 'lighten':
-                    transform.append(Lighten(detector_net_json=t['detector_net_json'],
-                                             mip_diff=t['mip_diff']))
-                elif trans_type == 'random_transpose':
-                    transform.append(RandomTranspose(prob=t['prob']))
-                elif trans_type == 'random_src_tgt_swap':
-                    transform.append(RandomSrcTgtSwap(prob=t['prob']))
-                elif trans_type == 'random_contrast':
-                    transform.append(RandomContrast(prob=t['prob'], min_mult=t['min_mult'], max_mult=t['max_mult']))
-                elif trans_type == 'random_brightness':
-                    transform.append(RandomBrightness(prob=t['prob'], min_add=t['min_add'], max_add=t['max_add']))
-                elif trans_type == 'crop_middle':
+                elif trans_type == "lighten":
+                    transform.append(
+                        Lighten(
+                            detector_net_json=t["detector_net_json"],
+                            mip_diff=t["mip_diff"],
+                        )
+                    )
+                elif trans_type == "random_transpose":
+                    transform.append(RandomTranspose(prob=t["prob"]))
+                elif trans_type == "random_src_tgt_swap":
+                    transform.append(RandomSrcTgtSwap(prob=t["prob"]))
+                elif trans_type == "random_contrast":
+                    transform.append(
+                        RandomContrast(
+                            prob=t["prob"],
+                            min_mult=t["min_mult"],
+                            max_mult=t["max_mult"],
+                        )
+                    )
+                elif trans_type == "random_brightness":
+                    transform.append(
+                        RandomBrightness(
+                            prob=t["prob"], min_add=t["min_add"], max_add=t["max_add"]
+                        )
+                    )
+                elif trans_type == "crop_middle":
                     transform.append(CropMiddle(cropped_shape=t["cropped_shape"]))
-                elif trans_type == 'random_crop':
+                elif trans_type == "random_crop":
                     transform.append(RandomCrop(**t))
-                elif trans_type == 'random_unpair_template':
+                elif trans_type == "random_unpair_template":
                     transform.append(RandomUnpairTemplate(**t))
-                elif trans_type == 'crop_sides':
-                    transform.append(CropSides(x_crop=t["x_crop"],
-                                               y_crop=t["y_crop"]))
-                elif trans_type == 'grey_box':
-                    transform.append(GreyBox(min_size=t["min_size"],
-                                             max_size=t["max_size"],
-                                             prob=t["prob"]))
-                elif trans_type == 'black_box':
-                    transform.append(GreyBox(min_size=t["min_size"],
-                                             max_size=t["max_size"],
-                                             prob=t["prob"]))
-                elif trans_type == 'sawtooth_boundary':
-                    transform.append(SawtoothBoundary(
-                                             x_cut=t["x_cut"],
-                                             y_cut=t["y_cut"],
-                                             do_src=t["do_src"],
-                                             do_tgt=t["do_tgt"],
-                                             prob=t["prob"],
-                                             fill_value=t["fill_value"]))
-                elif trans_type == 'translation':
+                elif trans_type == "crop_sides":
+                    transform.append(CropSides(x_crop=t["x_crop"], y_crop=t["y_crop"]))
+                elif trans_type == "grey_box":
+                    transform.append(
+                        GreyBox(
+                            min_size=t["min_size"],
+                            max_size=t["max_size"],
+                            prob=t["prob"],
+                        )
+                    )
+                elif trans_type == "black_box":
+                    transform.append(
+                        GreyBox(
+                            min_size=t["min_size"],
+                            max_size=t["max_size"],
+                            prob=t["prob"],
+                        )
+                    )
+                elif trans_type == "sawtooth_boundary":
+                    transform.append(
+                        SawtoothBoundary(
+                            x_cut=t["x_cut"],
+                            y_cut=t["y_cut"],
+                            do_src=t["do_src"],
+                            do_tgt=t["do_tgt"],
+                            prob=t["prob"],
+                            fill_value=t["fill_value"],
+                        )
+                    )
+                elif trans_type == "translation":
                     RandomTranslation(max_disp=t["max_disp"], prob=t["prob"])
-                elif trans_type == 'downsample':
+                elif trans_type == "downsample":
                     transform.append(Downsample())
                 else:
-                    raise Exception("Unrecognized transformation: {}".format(trans_type))
+                    raise Exception(
+                        "Unrecognized transformation: {}".format(trans_type)
+                    )
         if mip < output_mip:
             transform.append(Downsample())
 
     transform = torchvision.transforms.Compose(transform)
     return transform
 
+
 def set_up_transformation(transform_def, dataset, dataset_mip, output_mip):
     transform = generate_transform(transform_def, dataset_mip, output_mip)
     for d in dataset.datasets:
         d.set_transform(transform)
+
 
 def apply_transform(bundle, transform):
     if transform is not None:
         return transform(bundle)
     else:
         return bundle
+
 
 class Lighten(object):
     def __init__(self, detector_net_json, mip_diff=0):
@@ -127,6 +161,7 @@ class Lighten(object):
 
         return (src_lightened, tgt_lightened, res), masks_var
 
+
 class PreprocessorNet(object):
     def __init__(self, model_name, checkpoint_folder):
         self.model = open_model(name=model_name, checkpoint_folder=checkpoint_folder)
@@ -134,21 +169,28 @@ class PreprocessorNet(object):
 
     def __call__(self, bundle):
         with torch.no_grad():
-            src_proc = self.model(expand_dims(bundle['src'], 4)).squeeze()
-            tgt_proc = self.model(expand_dims(bundle['tgt'], 4)).squeeze()
-            bundle['src'] = src_proc
-            bundle['tgt'] = tgt_proc
-            '''
+            src_proc = self.model(expand_dims(bundle["src"], 4)).squeeze()
+            tgt_proc = self.model(expand_dims(bundle["tgt"], 4)).squeeze()
+            bundle["src"] = src_proc
+            bundle["tgt"] = tgt_proc
+            """
             src_tgt = torch.cat([bundle['src'].unsqueeze(0), bundle['tgt'].unsqueeze(0)], 0)
             good_feature = self.model.intermediate[2][:, feature].unsqueeze(1)
             good_feature_ups = self.upsampler(good_feature, scale_factor=2)
             bundle['src'] = good_feature_ups[0]
-            bundle['tgt'] = good_feature_ups[1]'''
+            bundle['tgt'] = good_feature_ups[1]"""
         return bundle
 
+
 class SergiyNorm(object):
-    def __init__(self, mask_plastic=False, filter_black=False, bad_fill=None,
-                 low_threshold=-0.485, high_threshold=1000):
+    def __init__(
+        self,
+        mask_plastic=False,
+        filter_black=False,
+        bad_fill=None,
+        low_threshold=-0.485,
+        high_threshold=1000,
+    ):
         self.normer = torch.nn.InstanceNorm1d(1)
         self.mask_plastic = mask_plastic
         self.per_slice = True
@@ -158,22 +200,25 @@ class SergiyNorm(object):
         self.high_threshold = high_threshold
         self.bad_fill = bad_fill
 
-
     def __call__(self, bundle):
-        src, tgt = bundle['src'], bundle['tgt']
+        src, tgt = bundle["src"], bundle["tgt"]
 
         if self.mask_plastic:
-            src_plastic = (1 - bundle['src_plastic'])
-            tgt_plastic = (1 - bundle['tgt_plastic'])
+            src_plastic = 1 - bundle["src_plastic"]
+            tgt_plastic = 1 - bundle["tgt_plastic"]
         if not self.filter_black:
             src_tissue = torch.ones_like(src)
             tgt_tissue = torch.ones_like(src)
         else:
-            src_defects = torch.ones_like(src)#get_raw_defect_mask(src)
-            tgt_defects = torch.ones_like(tgt)#get_raw_defect_mask(tgt)
+            src_defects = torch.ones_like(src)  # get_raw_defect_mask(src)
+            tgt_defects = torch.ones_like(tgt)  # get_raw_defect_mask(tgt)
 
-            src_white = get_brightness_mask(src, self.low_threshold, self.high_threshold)
-            tgt_white = get_brightness_mask(tgt, self.low_threshold, self.high_threshold)
+            src_white = get_brightness_mask(
+                src, self.low_threshold, self.high_threshold
+            )
+            tgt_white = get_brightness_mask(
+                tgt, self.low_threshold, self.high_threshold
+            )
 
             src_tissue = src_defects * src_white
             tgt_tissue = tgt_defects * tgt_white
@@ -196,13 +241,19 @@ class SergiyNorm(object):
         if tgt.dim() == 3 and self.per_slice:
             # with batch. don't want to normalize accross images
             for i in range(tgt.shape[0]):
-                tgt[i][tgt_good_mask[i]] = \
-                        self.normer(tgt[i][tgt_good_mask[i]].unsqueeze(0).unsqueeze(0)).squeeze()
-                src[i][src_good_mask[i]] = \
-                        self.normer(src[i][src_good_mask[i]].unsqueeze(0).unsqueeze(0)).squeeze()
+                tgt[i][tgt_good_mask[i]] = self.normer(
+                    tgt[i][tgt_good_mask[i]].unsqueeze(0).unsqueeze(0)
+                ).squeeze()
+                src[i][src_good_mask[i]] = self.normer(
+                    src[i][src_good_mask[i]].unsqueeze(0).unsqueeze(0)
+                ).squeeze()
         else:
-            tgt[tgt_good_mask] = self.normer(tgt[tgt_good_mask].unsqueeze(0).unsqueeze(0)).squeeze()
-            src[src_good_mask] = self.normer(src[src_good_mask].unsqueeze(0).unsqueeze(0)).squeeze()
+            tgt[tgt_good_mask] = self.normer(
+                tgt[tgt_good_mask].unsqueeze(0).unsqueeze(0)
+            ).squeeze()
+            src[src_good_mask] = self.normer(
+                src[src_good_mask].unsqueeze(0).unsqueeze(0)
+            ).squeeze()
 
         if self.bad_fill is None:
             src[src_bad_mask] = torch.min(src)
@@ -211,6 +262,7 @@ class SergiyNorm(object):
             src[src_bad_mask] = self.bad_fill
             tgt[tgt_bad_mask] = self.bad_fill
         return bundle
+
 
 class CropSides(object):
     def __init__(self, x_crop, y_crop):
@@ -239,6 +291,7 @@ class CropSides(object):
 
         return (src_cropped, tgt_cropped, res_cropped), cropped_masks
 
+
 class CropMiddle(object):
     def __init__(self, cropped_shape):
         self.cropped_shape = cropped_shape
@@ -248,7 +301,9 @@ class CropMiddle(object):
         src, tgt, res = src_tgt_res
         original_size = src.shape[-1]
 
-        x_bot, x_top, y_bot, y_top = get_center_crop_coords(src.shape, self.cropped_shape)
+        x_bot, x_top, y_bot, y_top = get_center_crop_coords(
+            src.shape, self.cropped_shape
+        )
 
         src_cropped = src[x_bot:x_top, y_bot:y_top]
         tgt_cropped = tgt[x_bot:x_top, y_bot:y_top]
@@ -260,6 +315,7 @@ class CropMiddle(object):
 
         return (src_cropped, tgt_cropped, res_cropped), cropped_masks
 
+
 class RandomUnpairTemplate(object):
     def __init__(self, prob):
         self.prob = prob
@@ -267,12 +323,13 @@ class RandomUnpairTemplate(object):
     def __call__(self, bundle):
         coin = np.random.uniform()
         if coin < self.prob:
-            bundle['src'] = bundle['src'].transpose(-1, -2)
-            bundle['paired'] = False
+            bundle["src"] = bundle["src"].transpose(-1, -2)
+            bundle["paired"] = False
         else:
-            bundle['paired'] = True
+            bundle["paired"] = True
 
         return bundle
+
 
 class RandomCrop(object):
     def __init__(self, cropped_shape, crop_src=True, crop_tgt=True):
@@ -281,31 +338,31 @@ class RandomCrop(object):
         self.crop_tgt = crop_tgt
 
     def __call__(self, bundle):
-        to_crop_src_keys = [i for i in bundle.keys() if 'src' in i]
-        to_crop_tgt_keys = [i for i in bundle.keys() if 'tgt' in i]
+        to_crop_src_keys = [i for i in bundle.keys() if "src" in i]
+        to_crop_tgt_keys = [i for i in bundle.keys() if "tgt" in i]
         to_crop_src = [bundle[i] for i in to_crop_src_keys]
         to_crop_tgt = [bundle[i] for i in to_crop_tgt_keys]
 
         if self.crop_src and self.crop_tgt:
             cropped = random_crop(to_crop_src + to_crop_tgt, self.cropped_shape)
-            cropped_src = cropped[:len(to_crop_src_keys)]
-            cropped_tgt = cropped[len(to_crop_src_keys):]
+            cropped_src = cropped[: len(to_crop_src_keys)]
+            cropped_tgt = cropped[len(to_crop_src_keys) :]
 
             for i in range(len(to_crop_src_keys)):
-                bundle[to_crop_src_keys[i]]= cropped_src[i]
+                bundle[to_crop_src_keys[i]] = cropped_src[i]
             for i in range(len(to_crop_tgt_keys)):
-                bundle[to_crop_tgt_keys[i]]= cropped_tgt[i]
+                bundle[to_crop_tgt_keys[i]] = cropped_tgt[i]
 
         elif self.crop_src:
             cropped_src = random_crop(to_crop_src, self.cropped_shape)
             for i in range(len(to_crop_src_keys)):
-                bundle[to_crop_src_keys[i]]= cropped_src[i]
+                bundle[to_crop_src_keys[i]] = cropped_src[i]
         elif self.crop_tgt:
             cropped_tgt = random_crop(to_crop_tgt, self.cropped_shape)
             for i in range(len(to_crop_tgt_keys)):
-                bundle[to_crop_tgt_keys[i]]= cropped_tgt[i]
+                bundle[to_crop_tgt_keys[i]] = cropped_tgt[i]
 
-        '''original_size = src.shape[-1]
+        """original_size = src.shape[-1]
 
         x_offset = random.randint(0, original_size - self.cropped_size - 1)
         y_offset = random.randint(0, original_size - self.cropped_size - 1)
@@ -315,9 +372,10 @@ class RandomCrop(object):
         tgt_cropped = tgt[x_offset:x_offset + self.cropped_size,
                           y_offset:y_offset + self.cropped_size]
         res_cropped = res[x_offset:x_offset + self.cropped_size,
-                          y_offset:y_offset + self.cropped_size, :]'''
+                          y_offset:y_offset + self.cropped_size, :]"""
 
         return bundle
+
 
 def get_random_crop_coords(full_shape, cropped_shape, coord_granularity=4):
     assert cropped_shape[0] <= full_shape[0]
@@ -333,6 +391,7 @@ def get_random_crop_coords(full_shape, cropped_shape, coord_granularity=4):
     y_top = y_bot + cropped_shape[1]
 
     return x_bot, x_top, y_bot, y_top
+
 
 def get_center_crop_coords(full_shape, cropped_shape, coord_granularity=4):
     assert cropped_shape[0] <= full_shape[0]
@@ -351,19 +410,24 @@ def get_center_crop_coords(full_shape, cropped_shape, coord_granularity=4):
 
     return x_bot, x_top, y_bot, y_top
 
+
 def random_crop(img, cropped_shape):
     result = []
     if isinstance(img, list):
         original_shape = img[0].shape[-2:]
-        x_bot, x_top, y_bot, y_top = get_random_crop_coords(original_shape, cropped_shape)
+        x_bot, x_top, y_bot, y_top = get_random_crop_coords(
+            original_shape, cropped_shape
+        )
         for i in img:
-            assert (i.shape[-2] == original_shape[-2])
-            assert (i.shape[-1] == original_shape[-1])
+            assert i.shape[-2] == original_shape[-2]
+            assert i.shape[-1] == original_shape[-1]
 
             result.append(i[..., x_bot:x_top, y_bot:y_top])
     else:
         original_shape = img.shape
-        x_bot, x_top, y_bot, y_top = get_random_crop_coords(original_shape, cropped_shape)
+        x_bot, x_top, y_bot, y_top = get_random_crop_coords(
+            original_shape, cropped_shape
+        )
 
         result.append(img[..., x_bot:x_top, y_bot:y_top])
     return result
@@ -377,13 +441,14 @@ class RandomTranspose(object):
         coin = np.random.uniform()
         if coin < self.prob:
             for k, v in six.iteritems(bundle):
-                if k != 'res':
+                if k != "res":
                     bundle[k] = v.transpose(0, 1)
 
-            if 'res' in bundle:
-                bundle['res'] = bundle['res'].transpose(0, 1).flip(2)
+            if "res" in bundle:
+                bundle["res"] = bundle["res"].transpose(0, 1).flip(2)
 
         return bundle
+
 
 class RandomSrcTgtSwap(object):
     def __init__(self, prob=0.5):
@@ -394,12 +459,13 @@ class RandomSrcTgtSwap(object):
         coin = np.random.uniform()
         if coin < self.prob:
             for k, v in six.iteritems(bundle):
-                if 'src' in k:
-                    result[k.replace('src', 'tgt')] = bundle[k]
-                if 'tgt' in k:
-                    result[k.replace('tgt', 'src')] = bundle[k]
+                if "src" in k:
+                    result[k.replace("src", "tgt")] = bundle[k]
+                if "tgt" in k:
+                    result[k.replace("tgt", "src")] = bundle[k]
 
         return result
+
 
 class RandomBrightness(object):
     def __init__(self, prob=0.5, min_add=0.01, max_add=0.1):
@@ -416,7 +482,7 @@ class RandomBrightness(object):
             cutoff = int(np.random.uniform() * src.shape[1])
             add = np.random.uniform(self.min_add, self.max_add)
             coin = np.random.uniform()
-            print ('Brighting')
+            print("Brighting")
             if coin < 0.5:
                 coin = np.random.uniform()
                 if coin < 0.5:
@@ -498,6 +564,7 @@ class RandomContrast(object):
                     tgt[:, :, :cutoff] *= mult
         return ((src, tgt, res), masks_var)
 
+
 class Downsample(object):
     def __init__(self):
         self.pooler = torch.nn.AvgPool2d((2, 2))
@@ -506,14 +573,14 @@ class Downsample(object):
 
         for k, v in six.iteritems(bundle):
 
-            if 'res' in k:
-                #this might not work when introducing b
+            if "res" in k:
+                # this might not work when introducing b
                 original_size = v.shape[-1]
-                assert (original_size % 2 == 0)
+                assert original_size % 2 == 0
                 bundle[k] = self.pooler(v.permute(2, 0, 1)).permute(1, 2, 0)
-            elif 'src' in k or 'tgt' in k:
+            elif "src" in k or "tgt" in k:
                 original_size = v.shape[-1]
-                assert (original_size % 2 == 0)
+                assert original_size % 2 == 0
                 bundle[k] = self.pooler(v.unsqueeze(0)).squeeze(0)
 
         return bundle
@@ -522,7 +589,8 @@ class Downsample(object):
 class RandomTranslation(object):
     """ Translate image by disp pixels
     """
-    def __init__(self, max_disp=(2**6, 2**6), prob=1.0):
+
+    def __init__(self, max_disp=(2 ** 6, 2 ** 6), prob=1.0):
         self.max_disp = max_disp
         self.prob = prob
 
@@ -544,7 +612,8 @@ class RandomTranslation(object):
 class Translation(object):
     """ Translate image by disp pixels
     """
-    def __init__(self, disp=(2**6, 2**6)):
+
+    def __init__(self, disp=(2 ** 6, 2 ** 6)):
         self.disp = disp
 
     def __call__(self, src_tgt_res):
@@ -560,11 +629,13 @@ class Translation(object):
 class ToFloatTensor(object):
     """Convert ndarray to FloatTensor
     """
+
     def __call__(self, bundle):
         for k, v in six.iteritems(bundle):
             bundle[k] = torch.cuda.FloatTensor(v)
 
         return bundle
+
 
 class Preprocess(object):
     def __init__(self, div=255.0, sub=0.5):
@@ -572,14 +643,14 @@ class Preprocess(object):
         self.sub = sub
 
     def __call__(self, bundle):
-        bundle['src'] = bundle['src'] / self.div - self.sub
-        bundle['tgt'] = bundle['tgt'] / self.div - self.sub
+        bundle["src"] = bundle["src"] / self.div - self.sub
+        bundle["tgt"] = bundle["tgt"] / self.div - self.sub
 
         return bundle
 
+
 class GreyBox(object):
-    def __init__(self, max_size=2, min_size=10, prob=0.5,
-                 do_src=True, do_tgt=True):
+    def __init__(self, max_size=2, min_size=10, prob=0.5, do_src=True, do_tgt=True):
         self.max_size = max_size
         self.min_size = min_size
         self.prob = prob
@@ -588,35 +659,57 @@ class GreyBox(object):
 
     def __call__(self, src_tgt_res):
         src, tgt, res = src_tgt_res
-        src = occlude_box(src, self.min_size, self.max_size,
-                          self.prob, fill_proportion=0.7,
-                          fill_low=-0.5, fill_high=-0.15)
-        tgt = occlude_box(tgt, self.min_size, self.max_size,
-                          self.prob, fill_proportion=0.7,
-                          fill_low=-0.5, fill_high=-0.15)
+        src = occlude_box(
+            src,
+            self.min_size,
+            self.max_size,
+            self.prob,
+            fill_proportion=0.7,
+            fill_low=-0.5,
+            fill_high=-0.15,
+        )
+        tgt = occlude_box(
+            tgt,
+            self.min_size,
+            self.max_size,
+            self.prob,
+            fill_proportion=0.7,
+            fill_low=-0.5,
+            fill_high=-0.15,
+        )
         return src, tgt, res
 
 
 class BlackBox(object):
-    def __init__(self, max_size=2, min_size=10, prob=0.5,
-                 do_src=True, do_tgt=True):
+    def __init__(self, max_size=2, min_size=10, prob=0.5, do_src=True, do_tgt=True):
         self.max_size = max_size
         self.min_size = min_size
         self.prob = prob
 
     def __call__(self, src_tgt_res):
         src, tgt, res = src_tgt_res
-        src = occlude_box(src, self.min_size, self.max_size,
-                          self.prob, fill_proportion=1,
-                          fill_low=-0.5, fill_high=-0.5)
-        tgt = occlude_box(tgt, self.min_size, self.max_size,
-                          self.prob, fill_proportion=1,
-                          fill_low=-0.5, fill_high=-0.5)
+        src = occlude_box(
+            src,
+            self.min_size,
+            self.max_size,
+            self.prob,
+            fill_proportion=1,
+            fill_low=-0.5,
+            fill_high=-0.5,
+        )
+        tgt = occlude_box(
+            tgt,
+            self.min_size,
+            self.max_size,
+            self.prob,
+            fill_proportion=1,
+            fill_low=-0.5,
+            fill_high=-0.5,
+        )
         return src, tgt, res
 
 
-def occlude_box(img, min_size, max_size, prob, fill_proportion,
-                fill_low, fill_high):
+def occlude_box(img, min_size, max_size, prob, fill_proportion, fill_low, fill_high):
     coin = np.random.uniform()
     if coin < prob:
         x_size = random.randint(min_size, max_size)
@@ -624,13 +717,13 @@ def occlude_box(img, min_size, max_size, prob, fill_proportion,
         xs = random.randint(0, img.shape[0] - x_size)
         ys = random.randint(0, img.shape[1] - y_size)
 
-        mask         = np.random.uniform(size=(x_size, y_size)) < fill_proportion
+        mask = np.random.uniform(size=(x_size, y_size)) < fill_proportion
         masked_count = np.count_nonzero(mask)
-        fill_data    = np.random.uniform(low=fill_low, high=fill_high, size=masked_count)
+        fill_data = np.random.uniform(low=fill_low, high=fill_high, size=masked_count)
 
-        target_data = np.array(img[xs:xs+x_size, ys:ys+y_size])
+        target_data = np.array(img[xs : xs + x_size, ys : ys + y_size])
         target_data[mask] = fill_data
-        img[xs:xs+x_size, ys:ys+y_size] = torch.FloatTensor(target_data)
+        img[xs : xs + x_size, ys : ys + y_size] = torch.FloatTensor(target_data)
     return img
 
 
@@ -641,18 +734,26 @@ class RandomWarp(object):
         1 == 2 directions along each axis
         i == 2^i directions along each axis
     """
-    def __init__(self, difficulty=2, max_disp=10, prob=1.0, min_disp=0,
-                 randomize_d=False, random_epicenters=True):
+
+    def __init__(
+        self,
+        difficulty=2,
+        max_disp=10,
+        prob=1.0,
+        min_disp=0,
+        randomize_d=False,
+        random_epicenters=True,
+    ):
         assert difficulty >= 0
         self.randomize_d = randomize_d
         self.difficulty = difficulty
         self.max_disp = max_disp
         self.min_disp = min_disp
-        self.prob     = prob
+        self.prob = prob
         self.random_epicenters = random_epicenters
 
     def __call__(self, bundle):
-        src = bundle['src']
+        src = bundle["src"]
 
         if self.randomize_d and self.difficulty > 0:
             curr_diff = random.randint(0, self.difficulty)
@@ -663,27 +764,26 @@ class RandomWarp(object):
             # NOTE image dimention assumed to be power of 2
 
             granularity = int(np.log2(src.shape[-1]) - curr_diff)
-            res_delta = generate_random_residuals(src.squeeze().shape,
-                                                  min_disp=self.min_disp,
-                                                  max_disp=self.max_disp,
-                                                  granularity=granularity,
-                                                  random_epicenters=self.random_epicenters)
+            res_delta = generate_random_residuals(
+                src.squeeze().shape,
+                min_disp=self.min_disp,
+                max_disp=self.max_disp,
+                granularity=granularity,
+                random_epicenters=self.random_epicenters,
+            )
             for k, v in six.iteritems(bundle):
-                if k == 'res':
-                    bundle[k] = combine_residuals(v, res_delta,
-                                                is_pix_res=True)
-                elif 'res' in k:
-                    print ("Warp does nothing to {}".format(k))
-                elif 'tgt' in k:
+                if k == "res":
+                    bundle[k] = combine_residuals(v, res_delta, is_pix_res=True)
+                elif "res" in k:
+                    print("Warp does nothing to {}".format(k))
+                elif "tgt" in k:
                     bundle[k] = res_warp_img(bundle[k], res_delta, is_pix_res=True)
 
         return bundle
 
 
-
 class SawtoothBoundary(object):
-    def __init__(self, x_cut, y_cut, do_src, do_tgt, prob,
-                 fill_value=-0.5):
+    def __init__(self, x_cut, y_cut, do_src, do_tgt, prob, fill_value=-0.5):
         self.x_cut = x_cut
         self.y_cut = y_cut
         self.do_src = do_src
@@ -694,8 +794,12 @@ class SawtoothBoundary(object):
     def __call__(self, data_and_masks):
         src_tgt_res, masks_var = data_and_masks
         src, tgt, res = src_tgt_res
-        cut_functions = [horizontal_sawtooth_left, horizontal_sawtooth_right,
-                         vertical_sawtooth_top, vertical_sawtooth_bot]
+        cut_functions = [
+            horizontal_sawtooth_left,
+            horizontal_sawtooth_right,
+            vertical_sawtooth_top,
+            vertical_sawtooth_bot,
+        ]
 
         for f in cut_functions:
             if self.do_src:
@@ -730,15 +834,15 @@ def horizontal_sawtooth_left(img, x_cut, y_cut, fill_value):
         if curr_height >= img_height:
             curr_height = img_height - 1
 
-        cuts.append({"w_start": width_i,
-                     "w_end": width_i + cut_length,
-                     "height": curr_height})
+        cuts.append(
+            {"w_start": width_i, "w_end": width_i + cut_length, "height": curr_height}
+        )
 
         width_i += cut_length
 
     img_out = img
     for c in cuts:
-        img_out[c['w_start']:c['w_end'], 0:c['height']] = fill_value
+        img_out[c["w_start"] : c["w_end"], 0 : c["height"]] = fill_value
 
     return img_out
 
@@ -763,43 +867,44 @@ def horizontal_sawtooth_right(img, x_cut, y_cut, fill_value):
         if curr_height >= img_height:
             curr_height = img_height - 1
 
-        cuts.append({"w_start": width_i,
-                     "w_end": width_i + cut_length,
-                     "height": curr_height})
+        cuts.append(
+            {"w_start": width_i, "w_end": width_i + cut_length, "height": curr_height}
+        )
 
         width_i += cut_length
 
     img_out = img
     for c in cuts:
-        img_out[c['w_start']:c['w_end'], c['height']:] = fill_value
+        img_out[c["w_start"] : c["w_end"], c["height"] :] = fill_value
 
     return img_out
 
 
 def vertical_sawtooth_top(img, x_cut, y_cut, fill_value):
-    img_in_trans  = torch.transpose(img, 0, 1)
+    img_in_trans = torch.transpose(img, 0, 1)
     img_out_trans = horizontal_sawtooth_left(img_in_trans, x_cut, y_cut, fill_value)
     img_out = torch.transpose(img_out_trans, 0, 1)
     return img_out
 
 
 def vertical_sawtooth_bot(img, x_cut, y_cut, fill_value):
-    img_in_trans  = torch.transpose(img, 0, 1)
+    img_in_trans = torch.transpose(img, 0, 1)
     img_out_trans = horizontal_sawtooth_right(img_in_trans, x_cut, y_cut, fill_value)
     img_out = torch.transpose(img_out_trans, 0, 1)
     return img_out
 
 
-def generate_random_residuals(shape, max_disp, min_disp=0, granularity=9,
-                              random_epicenters=True):
+def generate_random_residuals(
+    shape, max_disp, min_disp=0, granularity=9, random_epicenters=True
+):
     if random_epicenters:
-        seed_shape = [i // (2**(granularity - 1)) for i in shape]
+        seed_shape = [i // (2 ** (granularity - 1)) for i in shape]
         up_shape = [i * 2 for i in shape]
     else:
-        seed_shape = [i // (2**(granularity)) for i in shape]
+        seed_shape = [i // (2 ** (granularity)) for i in shape]
         up_shape = shape
 
-    '''mask_x = np.random.uniform(size=seed_shape) > 0.5
+    """mask_x = np.random.uniform(size=seed_shape) > 0.5
     mask_y = np.random.uniform(size=seed_shape) > 0.5
 
     seed_x = np.random.normal(size=seed_shape, scale=1.0)
@@ -811,7 +916,7 @@ def generate_random_residuals(shape, max_disp, min_disp=0, granularity=9,
                                       scale=0.1)
 
     seed_x = seed_x * np.random.uniform() * max_disp
-    seed_y = seed_y * np.random.uniform() * max_disp'''
+    seed_y = seed_y * np.random.uniform() * max_disp"""
     seed_x = np.random.uniform(size=seed_shape, low=min_disp, high=max_disp)
     seed_y = np.random.uniform(size=seed_shape, low=min_disp, high=max_disp)
     up_x = skimage.transform.resize(seed_x, up_shape)
@@ -831,8 +936,8 @@ def generate_whirpool_residuals(shape, disp=10):
 
 
 def x_translation(img, disp, res):
-    result        = torch.cuda.zeros(img.size(), device='cuda')
-    res_delta = torch.cuda.zeros(res.size(), device='cuda')
+    result = torch.cuda.zeros(img.size(), device="cuda")
+    res_delta = torch.cuda.zeros(res.size(), device="cuda")
 
     res_delta[:, :, 1] -= disp
     result = res_warp_img(img, res_delta, is_pix_res=True)
@@ -842,8 +947,8 @@ def x_translation(img, disp, res):
 
 
 def y_translation(img, disp, res):
-    result        = torch.cuda.zeros(img.size(), device='cuda')
-    res_delta = torch.cuda.zeros(res.size(), device='cuda')
+    result = torch.cuda.zeros(img.size(), device="cuda")
+    res_delta = torch.cuda.zeros(res.size(), device="cuda")
 
     res_delta[:, :, 0] -= disp
     result = res_warp_img(img, res_delta, is_pix_res=True)
