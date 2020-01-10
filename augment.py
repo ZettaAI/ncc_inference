@@ -16,11 +16,12 @@ from torch.autograd import Variable
 
 def get_brightness_mask(img, low_cutoff, high_cutoff):
     result = (img >= low_cutoff) * (img <= high_cutoff)
-    return result.type(torch.cuda.FloatTensor)
+    result = result.to(img.device).float()
+    return result
 
 
-def generate_transform(transform_def, dataset_mip, output_mip):
-    transform = [ToFloatTensor()]
+def generate_transform(transform_def, dataset_mip, output_mip, cpu=False):
+    transform = [ToFloatTensor(cpu=cpu)]
     transform_def = {int(m): t for (m, t) in six.iteritems(transform_def)}
 
     for mip in range(dataset_mip, output_mip + 1):
@@ -207,11 +208,11 @@ class SergiyNorm(object):
             src_plastic = 1 - bundle["src_plastic"]
             tgt_plastic = 1 - bundle["tgt_plastic"]
         if not self.filter_black:
-            src_tissue = torch.ones_like(src)
-            tgt_tissue = torch.ones_like(src)
+            src_tissue = torch.ones_like(src, device=src.device)
+            tgt_tissue = torch.ones_like(src, device=src.device)
         else:
-            src_defects = torch.ones_like(src)  # get_raw_defect_mask(src)
-            tgt_defects = torch.ones_like(tgt)  # get_raw_defect_mask(tgt)
+            src_defects = torch.ones_like(src, device=src.device)  # get_raw_defect_mask(src)
+            tgt_defects = torch.ones_like(tgt, device=src.device)  # get_raw_defect_mask(tgt)
 
             src_white = get_brightness_mask(
                 src, self.low_threshold, self.high_threshold
@@ -219,7 +220,6 @@ class SergiyNorm(object):
             tgt_white = get_brightness_mask(
                 tgt, self.low_threshold, self.high_threshold
             )
-
             src_tissue = src_defects * src_white
             tgt_tissue = tgt_defects * tgt_white
 
@@ -629,10 +629,15 @@ class Translation(object):
 class ToFloatTensor(object):
     """Convert ndarray to FloatTensor
     """
-
+    def __init__(self, cpu=False):
+        self.cpu = cpu
     def __call__(self, bundle):
-        for k, v in six.iteritems(bundle):
-            bundle[k] = torch.cuda.FloatTensor(v)
+        if self.cpu:
+            for k, v in six.iteritems(bundle):
+                bundle[k] = torch.FloatTensor(v)
+        else:
+            for k, v in six.iteritems(bundle):
+                bundle[k] = torch.cuda.FloatTensor(v)
 
         return bundle
 

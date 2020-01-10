@@ -33,6 +33,7 @@ class FlyCopyTask(RegisteredTask):
         self.tgt_chunk_coord = tgt_chunk_coords
 
     def execute(self):
+        print ("starting work")
         s = time.time()
         cv_src = cv.CloudVolume(self.cv_src_path, mip=self.mip, fill_missing=True,
                                 bounded=False, progress=False, parallel=self.threads)
@@ -64,7 +65,7 @@ if __name__ == "__main__":
     parser.add_argument('--queue', type=str, default=None)
     parser.add_argument('--mode', type=str, default='master')
     parser.add_argument('--threads', type=int, default=32)
-    parser.add_argument('--worker_proc_count', type=int, default=4)
+    parser.add_argument('--worker_proc_count', type=int, default=1)
     parser.add_argument('--lease_seconds', type=int, default=32)
     args = parser.parse_args()
     print ('{} mode activated'.format(args.mode))
@@ -72,7 +73,7 @@ if __name__ == "__main__":
     if args.mode == 'master':
         copy_info = True
         cv_src_path ='gs://fafb_v15_montages/FAFB_montage/v15_montage_20190901_rigid_split/1024x1024'
-        cv_dst_path = 'gs://fafb_v15_montages/sergiy_playground/test1'
+        cv_dst_path = 'gs://fafb_v15_montages/sergiy_playground/main_region'
         mip = 0
 
         print ("Kreating source cloud volume")
@@ -92,8 +93,8 @@ if __name__ == "__main__":
             cv_dst = cv.CloudVolume(cv_dst_path, mip=mip,
                                     fill_missing=True, bounded=False,
                                     progress=False)
-        src_cv_start = [0, 8192, 300300]
-        tgt_cv_start = [0, 0, 3003]
+        src_cv_start = [0, 8192, 300000]
+        tgt_cv_start = [0, 0, 3000]
 
         chunk_mult = 4
         tgt_step_sizes = [1024*chunk_mult, 1024*chunk_mult, 1]
@@ -102,7 +103,9 @@ if __name__ == "__main__":
         tgt_chunk_sizes = tgt_step_sizes
         src_chunk_sizes = tgt_chunk_sizes
 
-        src_cv_end = [231424, 114688, 310000]
+        src_cv_end = [231424, 114688, 340000]
+        #chunk_count = 2
+        #src_cv_end = [src_cv_start[i] + chunk_count*src_step_sizes[i] for i in range(3)]
         tgt_cv_end = [tgt_cv_start[i] + \
                       ceil((src_cv_end[i] - src_cv_start[i]) / (src_step_sizes[i] / tgt_step_sizes[i])) \
                       for i in range(3)]
@@ -137,12 +140,14 @@ if __name__ == "__main__":
         with TaskQueue(args.queue) as tq:
             if args.mode == "worker":
                 print ("Working")
-                worker_ps = []
-
-                for _ in range(args.worker_proc_count):
-                    print ('starting another worker')
-                    p = Process(target=work, args=(tq, args.lease_seconds))
-                    p.start()
+                if args.worker_proc_count == 1:
+                        print ('starting single worker, lease seconds: {}'.format(args.lease_seconds))
+                        work(tq, args.lease_seconds)
+                else:
+                    for _ in range(args.worker_proc_count):
+                        print ('starting another worker, lease seconds: {}'.format(args.lease_seconds))
+                        p = Process(target=work, args=(tq, args.lease_seconds))
+                        p.start()
 
             elif args.mode == "master":
                 print ("Scheduling Tasks")

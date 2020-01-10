@@ -15,7 +15,8 @@ from taskqueue import RegisteredTask, TaskQueue
 
 class NormalizeTask(RegisteredTask):
     def __init__(self, start_section, end_section, img_src_cv_path):
-        resin_cv_path = os.path.join(img_src_cv_path, "resin_mask")
+        #resin_cv_path = os.path.join(img_src_cv_path, "resin_mask")
+        resin_cv_path = None
         img_dst_cv_path = os.path.join(img_src_cv_path, "m6_normalized")
         super(NormalizeTask, self).__init__(start_section, end_section, img_src_cv_path)
 
@@ -85,7 +86,10 @@ def normalize_section_range(
     resin_scale_factor = 2 ** (resin_mip - img_mip)
 
     cv_xy_start = [0, 0]
-    cv_xy_end = [8096, 8096]
+    #MINNIE
+    #cv_xy_end = [8096, 8096]
+    #FLY
+    cv_xy_end = [4096, 4096]
     spoof_sample = {"src": None, "tgt": None}
 
     for z in range(start_section, end_section):
@@ -117,16 +121,18 @@ def normalize_section_range(
             ).astype(np.uint8)
             spoof_sample["src_plastic"] = cv_resin_data_ups
             spoof_sample["tgt_plastic"] = cv_resin_data_ups
+
         norm_transform = generate_transform(
             {
                 img_mip: [
                     {"type": "preprocess"},
                     {
                         "type": "sergiynorm",
-                        "mask_plastic": True,
+                        "mask_plastic": False,
                         "low_threshold": -0.485,
                         # "high_threshold": 0.35, #BASILLLL
-                        "high_threshold": 0.22,  # MINNIE
+                        #"high_threshold": 0.22,  # MINNIE
+                        "high_threshold": 0.35,  #FLY
                         "filter_black": True,
                         "bad_fill": -20.0,
                     },
@@ -134,6 +140,7 @@ def normalize_section_range(
             },
             img_mip,
             img_mip,
+            cpu=True
         )
         norm_sample = apply_transform(spoof_sample, norm_transform)
         processed_patch = norm_sample["src"].squeeze()
@@ -161,8 +168,8 @@ if __name__ == "__main__":
             work(tq)
         elif sys.argv[1] == "master":
             # TODO: proper argument parsing
-            start = 14780
-            end = 27883
+            start = 3000
+            end = 3400
             for i in range(start, end):
                 tq.insert(
                     NormalizeTask(

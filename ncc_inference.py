@@ -28,14 +28,14 @@ class NCCTask(RegisteredTask):
             print(self)
 
 
-def ncc_section_range(start_section, end_section, path_template):
-    img_in_out_mip = [(6, 6), (6, 7), (7, 8)]
+def ncc_section_range(start_section, end_section, path_template, suffix="_fly"):
+    img_in_out_mip = [(6, 6)]
     for img_in_mip, img_out_mip in img_in_out_mip:
-        pyramid_name = "ncc_m{}".format(img_out_mip)
+        pyramid_name = "ncc_m{}{}".format(img_out_mip, suffix)
         if img_out_mip == 6:
             cv_src_path = os.path.join(path_template, "m6_normalized")
             cv_dst_path = os.path.join(
-                path_template, "ncc", "ncc_m{}".format(img_out_mip)
+                path_template, "ncc", "{}".format(pyramid_name)
             )
         elif img_out_mip in [7, 8]:
             cv_src_path = os.path.join(
@@ -74,15 +74,15 @@ def ncc_section_range(start_section, end_section, path_template):
         crop = 256
         if img_in_mip == 6:
             cv_xy_start = [256 * 0, 1024 * 0]
-            cv_xy_end = [8096, 8096]  # [1024 * 8 - 256*0, 1024 * 8 - 256*0]
-            patch_size = 8096 // 4
+            cv_xy_end = [4096, 4096]  # [1024 * 8 - 256*0, 1024 * 8 - 256*0]
+            patch_size = 2048
         elif img_in_mip == 7:
             cv_xy_start = [256 * 0, 1024 * 0]
-            cv_xy_end = [4048, 4048]  # [1024 * 8 - 256*0, 1024 * 8 - 256*0]
-            patch_size = 4048 // 2
+            cv_xy_end = [2048, 2048]  # [1024 * 8 - 256*0, 1024 * 8 - 256*0]
+            patch_size = 2048
         elif img_in_mip == 8:
-            cv_xy_end = [2024, 2048]  # [1024 * 8 - 256*0, 1024 * 8 - 256*0]
-            patch_size = 2024
+            cv_xy_end = [1024, 1024]  # [1024 * 8 - 256*0, 1024 * 8 - 256*0]
+            patch_size = 1024
 
         global_start = 0
         scale_factor = 2 ** (img_out_mip - img_in_mip)
@@ -198,7 +198,8 @@ def ncc_section_range(start_section, end_section, path_template):
 
 
 def work(tq):
-    tq.poll(lease_seconds=int(300))
+    print ("starting work")
+    tq.poll(lease_seconds=int(30))
 
 if __name__ == "__main__":
     with TaskQueue(sys.argv[2]) as tq:
@@ -206,8 +207,8 @@ if __name__ == "__main__":
             work(tq)
         elif sys.argv[1] == "master":
             # w000ohhooooo
-            start = 14780
-            end = 27883
+            start = 3000
+            end = 3020
             for i in range(start, end):
                 tq.insert(
                     NCCTask(
