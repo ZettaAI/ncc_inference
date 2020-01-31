@@ -17,7 +17,7 @@ class NormalizeTask(RegisteredTask):
     def __init__(self, start_section, end_section, img_src_cv_path):
         #resin_cv_path = os.path.join(img_src_cv_path, "resin_mask")
         resin_cv_path = None
-        img_dst_cv_path = os.path.join(img_src_cv_path, "m6_normalized")
+        img_dst_cv_path = os.path.join(img_src_cv_path, "m4_normalized")
         super(NormalizeTask, self).__init__(start_section, end_section, img_src_cv_path)
 
         # attributes passed to super().__init__ are automatically assigned
@@ -46,7 +46,7 @@ def normalize_section_range(
     start_section, end_section, img_dst_cv_path, img_src_cv_path, resin_cv_path
 ):
     resin_mip = 8
-    img_mip = 6
+    img_mip = 4
 
     img_src_cv = cv.CloudVolume(
         img_src_cv_path,
@@ -85,11 +85,12 @@ def normalize_section_range(
 
     resin_scale_factor = 2 ** (resin_mip - img_mip)
 
-    cv_xy_start = [0, 0]
+    #cv_xy_start = [224256//16, 158720//16]
     #MINNIE
     #cv_xy_end = [8096, 8096]
     #FLY
-    cv_xy_end = [4096, 4096]
+    cv_xy_start = [13248, 9152]
+    cv_xy_end = [16320, 13248]
     spoof_sample = {"src": None, "tgt": None}
 
     for z in range(start_section, end_section):
@@ -159,7 +160,7 @@ def normalize_section_range(
 
 
 def work(tq):
-    tq.poll(lease_seconds=int(300))
+    tq.poll(lease_seconds=int(20))
 
 
 if __name__ == "__main__":
@@ -168,8 +169,8 @@ if __name__ == "__main__":
             work(tq)
         elif sys.argv[1] == "master":
             # TODO: proper argument parsing
-            start = 3000
-            end = 3400
+            start = 17005
+            end = 18000
             for i in range(start, end):
                 tq.insert(
                     NormalizeTask(

@@ -28,12 +28,12 @@ class NCCTask(RegisteredTask):
             print(self)
 
 
-def ncc_section_range(start_section, end_section, path_template, suffix="_fly"):
-    img_in_out_mip = [(6, 6)]
+def ncc_section_range(start_section, end_section, path_template, suffix=""):
+    img_in_out_mip = [(3, 3)]
     for img_in_mip, img_out_mip in img_in_out_mip:
-        pyramid_name = "ncc_m{}{}".format(img_out_mip, suffix)
-        if img_out_mip == 6:
-            cv_src_path = os.path.join(path_template, "m6_normalized")
+        pyramid_name = "ncc_m4{}".format(img_out_mip, suffix)
+        if img_out_mip == 4:
+            cv_src_path = os.path.join(path_template, "m{}_normalized".format(img_in_mip))
             cv_dst_path = os.path.join(
                 path_template, "ncc", "{}".format(pyramid_name)
             )
@@ -72,9 +72,9 @@ def ncc_section_range(start_section, end_section, path_template, suffix="_fly"):
         cv_xy_start = [0, 0]
 
         crop = 256
-        if img_in_mip == 6:
-            cv_xy_start = [256 * 0, 1024 * 0]
-            cv_xy_end = [4096, 4096]  # [1024 * 8 - 256*0, 1024 * 8 - 256*0]
+        if img_in_mip == 4:
+            cv_xy_start = [13248, 9152]
+            cv_xy_end = [16320, 13248]
             patch_size = 2048
         elif img_in_mip == 7:
             cv_xy_start = [256 * 0, 1024 * 0]
@@ -207,8 +207,8 @@ if __name__ == "__main__":
             work(tq)
         elif sys.argv[1] == "master":
             # w000ohhooooo
-            start = 3000
-            end = 3020
+            start = 17005
+            end = 17205
             for i in range(start, end):
                 tq.insert(
                     NCCTask(
