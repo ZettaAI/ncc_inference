@@ -2,3 +2,5 @@ artificery
 cloud-volume
 pillow
 task-queue
+fastremap
+connected-components-3d

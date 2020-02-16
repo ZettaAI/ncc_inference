@@ -9,4 +9,6 @@ RUN pip install pillow
 RUN pip install task-queue
 
 WORKDIR /workspace
+ADD requirements.txt /workspace/
+RUN pip install -r requirements.txt
 ADD . /workspace
