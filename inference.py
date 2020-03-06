@@ -27,7 +27,7 @@ def processor_lookup(processor_name):
 
 class ProcessorTask(RegisteredTask):
     def __init__(self, bbox_start, bbox_end, path, mip, processor_name,
-            processor_args={}, patch_size=2048, crop=256, suffix=None):
+            processor_args={}, patch_size=3072, crop=256, suffix=None):
         super().__init__(bbox_start, bbox_end, path, mip, processor_name,
                 processor_args, patch_size, crop, suffix)
 
@@ -82,7 +82,7 @@ def apply_processor_3dbbox(bbox_start, bbox_end, path, mip, processor_name,
         autocrop=True,
     )
     dst_cv.info["data_type"] = "float32"
-    dst_cv.commit_info()
+    #dst_cv.commit_info()
 
     cv_xy_start = [0, 0]
 
@@ -133,6 +133,7 @@ def apply_processor_3dbbox(bbox_start, bbox_end, path, mip, processor_name,
     print(e - s, " sec")
 
 def work(tq, lease_seconds=60):
+    print ("start polling tasks...")
     tq.poll(lease_seconds=int(lease_seconds))
 
 
@@ -152,7 +153,7 @@ if __name__ == "__main__":
     parser.add_argument('--processor_args', '-a', type=str)
 
     args = parser.parse_args()
-
+    print ("Hello, world!")
 
     with TaskQueue(args.queue_name) as tq:
         if args.mode == "worker":

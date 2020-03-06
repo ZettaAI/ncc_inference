@@ -1,6 +1,23 @@
 import os
 import artificery
 import torch
+import numpy as np
+
+from scipy.ndimage import convolve
+
+def coarsen_mask(mask, n=1, flip=True):
+    kernel = np.ones((n, n))
+    mask = convolve(mask, kernel) > 0
+    mask = mask.astype(np.int16) > 0
+    return mask
+
+    kernel = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])
+    assert isinstance(mask, np.ndarray)
+    for _ in range(n):
+        mask = convolve(mask, kernel) > 0
+        mask = mask.astype(np.int16) > 0
+    return mask
+
 
 
 def get_np(pt):

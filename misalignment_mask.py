@@ -13,7 +13,7 @@ def filter_conn_will(array, size):
     print ("cc time: {}".format(time.time() - s))
     return cc_labels
 
-def tissue_mask_detector_cv(src_cv, x, y, z, th, size):
+def misalignment_mask_detector_cv(src_cv, x, y, z, th, size):
     data = np.array(src_cv[x[0]:x[1], y[0]:y[1], z]).squeeze()
     result = tissue_mask_detector(data, th, size)
     return result
