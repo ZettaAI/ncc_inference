@@ -13,6 +13,30 @@ from helpers import get_np
 from taskqueue import RegisteredTask, TaskQueue
 
 
+def normalize_cv(src_cv, x, y, z, mean_cv, var_cv, fill_value=0,
+                 mask_cv=None, th_high=None, th_low=None):
+    data = np.array(src_cv[x[0]:x[1], y[0]:y[1], z]).squeeze()
+    if mask_cv is None:
+        mask = np.zeros_like(data) > 0
+    else:
+        mask = np.array(mask_cv[x[0]:x[1], y[0]:y[1], z]).squeeze() > 0
+
+    if th_low is not None:
+        mask[data < th_low] = 1
+    if th_high is not None:
+        mask[data > th_high] = 1
+    mask[data == 0] = 1
+    mask[data == -20] = 1
+
+    mean = np.array(mean_cv[0, 0, z]).squeeze()
+    var = np.array(var_cv[0, 0, z]).squeeze()
+    result = deepcopy(data).astype(np.float32)
+    result[mask == False] -= mean
+    result[mask == False] /= np.sqrt(var)
+    result[mask] = fill_value
+
+    return result
+
 class NormalizeTask(RegisteredTask):
     def __init__(self, start_section, end_section, img_src_cv_path):
         #resin_cv_path = os.path.join(img_src_cv_path, "resin_mask")

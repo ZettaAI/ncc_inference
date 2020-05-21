@@ -18,28 +18,15 @@ from math import ceil
 
 #start_section = int(sys.argv[1])
 #end_section = int(sys.argv[2])
-copy_info = True
-cv_src_path ='gs://fafb_v15_montages/FAFB_montage/v15_montage_20190901_rigid_split/1024x1024'
-cv_dst_path = 'gs://fafb_v15_montages/sergiy_playground/test1'
-mip_in = mip_out = 0
 
 print ("Kreating source cloud volume")
 cv_src = cv.CloudVolume(cv_src_path, mip=mip_in, fill_missing=True, bounded=False, progress=False,
         parallel=32)
 print ("Kreating dst cloud volume")
-if copy_info:
-    cv_dst = cv.CloudVolume(cv_dst_path, mip=mip_out,
-                            fill_missing=True, bounded=False,
-                            progress=False, parallel=32,
-                            info=deepcopy(cv_src.info), non_aligned_writes=True)
-    cv_dst.info['scales'][0]['key'] = '4_4_40'
-    cv_dst.info['scales'][0]['resolution'] = [4, 4, 40]
+cv_dst = cv.CloudVolume(cv_dst_path, mip=img_out_mip,
+                        fill_missing=True, bounded=False,
+                        progress=False, parallel=32, non_aligned_writes=True)
 
-    cv_dst.commit_info()
-else:
-    cv_dst = cv.CloudVolume(cv_dst_path, mip=img_out_mip,
-                            fill_missing=True, bounded=False,
-                            progress=False, parallel=32, non_aligned_writes=True)
 src_cv_start = [0, 8192, 300000]
 tgt_cv_start = [0, 0, 3000]
 
@@ -86,22 +73,46 @@ print (e - s, " sec")
 if __name__ == "__main__":
     parser.add_argument('--mode', type=str)
     parser.add_argument('--queue_name', type=str)
-    parser.add_argument('--suffix', type=str, default=None)
-    parser.add_argument('--cv_path', type=str, default=None)
+    parser.add_argument('--cv_src_path', type=str)
+    parser.add_argument('--cv_dst_path', type=str)
+
     parser.add_argument('--bbox_start', type=str, default=None)
     parser.add_argument('--bbox_end', type=str, default=None)
-    parser.add_argument('--mip', type=int, default=4)
+    parser.add_argument('--mip', type=int, default=0)
+
     parser.add_argument('--crop', type=int, default=256)
     parser.add_argument('--lease_seconds', type=int, default=60)
     parser.add_argument('--processor_name', '-p', type=str)
     parser.add_argument('--processor_args', '-a', type=str)
+
     parser.add_argument('--gpu', type=int, default=0)
     args = parser.parse_args()
     print ("Hello, world!")
 
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.0
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+
+    copy_info = True
+    mip_in = mip_out = 0
+
+    print ("Kreating source cloud volume")
+    cv_src = cv.CloudVolume(cv_src_path, mip=mip_in, fill_missing=True, bounded=False, progress=False,
+            parallel=32)
+    print ("Kreating dst cloud volume")
+    if copy_info:
+        cv_dst = cv.CloudVolume(cv_dst_path, mip=mip_out,
+                                fill_missing=True, bounded=False,
+                                progress=False, parallel=32,
+                                info=deepcopy(cv_src.info), non_aligned_writes=True)
+        cv_dst.info['scales'][0]['key'] = '4_4_40'
+        cv_dst.info['scales'][0]['resolution'] = [4, 4, 40]
+
+        cv_dst.commit_info()
+    else:
+        cv_dst = cv.CloudVolume(cv_dst_path, mip=img_out_mip,
+                                fill_missing=True, bounded=False,
+                                progress=False, parallel=32, non_aligned_writes=True)
 
     with TaskQueue(args.queue_name) as tq:
         if args.mode == "worker":

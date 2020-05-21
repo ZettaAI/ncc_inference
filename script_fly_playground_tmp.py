@@ -47,8 +47,8 @@ else:
     cv_dst = cv.CloudVolume(cv_dst_path, mip=img_out_mip,
                             fill_missing=True, bounded=False,
                             progress=False, parallel=32, non_aligned_writes=True)
-src_cv_start = [0, 8192, 330000]
-tgt_cv_start = [0, 0, 3300]
+src_cv_start = [0, 8192, 340000]
+tgt_cv_start = [0, 0, 3400]
 
 tgt_step_sizes = [1024*16, 1024*16, 1]
 src_step_sizes = [1024*16, 1024*16, 100]
