@@ -14,10 +14,11 @@ from taskqueue import RegisteredTask, TaskQueue
 
 
 class NormalizeTask(RegisteredTask):
-    def __init__(self, start_section, end_section, img_src_cv_path):
-        resin_cv_path = os.path.join(img_src_cv_path, "resin_mask")
+    def __init__(self, start_section, end_section, img_src_cv_path, resin_cv_path):
+        if resin_cv_path is None:
+            resin_cv_path = os.path.join(img_src_cv_path, "resin_mask")
         img_dst_cv_path = os.path.join(img_src_cv_path, "m6_normalized")
-        super(NormalizeTask, self).__init__(start_section, end_section, img_src_cv_path)
+        super(NormalizeTask, self).__init__(start_section, end_section, img_src_cv_path, resin_cv_path)
 
         # attributes passed to super().__init__ are automatically assigned
         # use this space to perform additional processing such as:
@@ -44,8 +45,8 @@ class NormalizeTask(RegisteredTask):
 def normalize_section_range(
     start_section, end_section, img_dst_cv_path, img_src_cv_path, resin_cv_path
 ):
-    resin_mip = 8
-    img_mip = 6
+    resin_mip = 7
+    img_mip = 5
 
     img_src_cv = cv.CloudVolume(
         img_src_cv_path,
@@ -85,7 +86,8 @@ def normalize_section_range(
     resin_scale_factor = 2 ** (resin_mip - img_mip)
 
     cv_xy_start = [0, 0]
-    cv_xy_end = [8096, 8096]
+    #cv_xy_end = [8096, 8096]
+    cv_xy_end = [13312, 13312]
     spoof_sample = {"src": None, "tgt": None}
 
     for z in range(start_section, end_section):
@@ -151,21 +153,21 @@ def normalize_section_range(
         print(e - s, " sec")
 
 
-def work(tq):
-    tq.poll(lease_seconds=int(300))
+def work(tq, ls):
+    tq.poll(lease_seconds=ls)
 
 
 if __name__ == "__main__":
     with TaskQueue(sys.argv[2]) as tq:
         if sys.argv[1] == "worker":
-            work(tq)
+            work(tq, int(sys.argv[3]))
         elif sys.argv[1] == "master":
             # TODO: proper argument parsing
-            start = 14780
-            end = 27883
+            start = int(sys.argv[5])
+            end = int(sys.argv[6])
             for i in range(start, end):
                 tq.insert(
                     NormalizeTask(
-                        start_section=i, end_section=1 + i, img_src_cv_path=sys.argv[3]
+                        start_section=i, end_section=1 + i, img_src_cv_path=sys.argv[3], resin_cv_path=sys.argv[4]
                     )
                 )
