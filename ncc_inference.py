@@ -54,6 +54,11 @@ def ncc_section_range(start_section, end_section, path_template):
             bounded=False,
             progress=False,
         )
+        
+        # FIXME: Will not work because cv_dst_path does not exist. Need to run 1 section first creating and
+        # committing the info file. However, then you need put the comments back
+        # if you are running this in a distributed manner.
+        # The fix should be to create the CV in master as opposed to worker.
         cv_dst = cv.CloudVolume(
             cv_dst_path,
             mip=img_out_mip,
@@ -61,28 +66,28 @@ def ncc_section_range(start_section, end_section, path_template):
             bounded=False,
             progress=False,
             parallel=1,
-            info=copy.deepcopy(cv_src.info),
+            # info=copy.deepcopy(cv_src.info),
             non_aligned_writes=False,
             delete_black_uploads=True,
             autocrop=True,
         )
-        cv_dst.info["data_type"] = "float32"
-        cv_dst.commit_info()
+        # cv_dst.info["data_type"] = "float32"
+        # cv_dst.commit_info()
 
         cv_xy_start = [0, 0]
 
         crop = 256
         if img_in_mip == 6:
             cv_xy_start = [256 * 0, 1024 * 0]
-            cv_xy_end = [8096, 8096]  # [1024 * 8 - 256*0, 1024 * 8 - 256*0]
-            patch_size = 8096 // 4
+            cv_xy_end = [8192, 8192]  # [1024 * 8 - 256*0, 1024 * 8 - 256*0]
+            patch_size = 8192 // 4
         elif img_in_mip == 7:
             cv_xy_start = [256 * 0, 1024 * 0]
-            cv_xy_end = [4048, 4048]  # [1024 * 8 - 256*0, 1024 * 8 - 256*0]
-            patch_size = 4048 // 2
+            cv_xy_end = [4096, 4096]  # [1024 * 8 - 256*0, 1024 * 8 - 256*0]
+            patch_size = 4096 // 2
         elif img_in_mip == 8:
-            cv_xy_end = [2024, 2048]  # [1024 * 8 - 256*0, 1024 * 8 - 256*0]
-            patch_size = 2024
+            cv_xy_end = [2048, 2048]  # [1024 * 8 - 256*0, 1024 * 8 - 256*0]
+            patch_size = 2048
 
         global_start = 0
         scale_factor = 2 ** (img_out_mip - img_in_mip)
@@ -197,17 +202,17 @@ def ncc_section_range(start_section, end_section, path_template):
             print(e - s, " sec")
 
 
-def work(tq):
-    tq.poll(lease_seconds=int(300))
+def work(tq, ls):
+    tq.poll(lease_seconds=int(ls))
 
 if __name__ == "__main__":
     with TaskQueue(sys.argv[2]) as tq:
         if sys.argv[1] == "worker":
-            work(tq)
+            work(tq, int(sys.argv[3]))
         elif sys.argv[1] == "master":
             # w000ohhooooo
-            start = 14780
-            end = 27883
+            start = int(sys.argv[4])
+            end = int(sys.argv[5])
             for i in range(start, end):
                 tq.insert(
                     NCCTask(
