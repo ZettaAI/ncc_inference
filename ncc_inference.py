@@ -66,13 +66,13 @@ def ncc_section_range(start_section, end_section, path_template):
             bounded=False,
             progress=False,
             parallel=1,
-            # info=copy.deepcopy(cv_src.info),
+            info=copy.deepcopy(cv_src.info),
             non_aligned_writes=False,
             delete_black_uploads=True,
             autocrop=True,
         )
-        # cv_dst.info["data_type"] = "float32"
-        # cv_dst.commit_info()
+        cv_dst.info["data_type"] = "float32"
+        cv_dst.commit_info()
 
         cv_xy_start = [0, 0]
 

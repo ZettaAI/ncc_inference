@@ -15,8 +15,9 @@ from taskqueue import RegisteredTask, TaskQueue
 
 class NormalizeTask(RegisteredTask):
     def __init__(self, start_section, end_section, img_src_cv_path, resin_cv_path):
-        if resin_cv_path is None:
-            resin_cv_path = os.path.join(img_src_cv_path, "resin_mask")
+        # if resin_cv_path is None:
+        #     resin_cv_path = os.path.join(img_src_cv_path, "resin_mask")
+        resin_cv_path = 'gs://zetta_aibs_human_unaligned/misc/fake_resin'
         img_dst_cv_path = os.path.join(img_src_cv_path, "m6_normalized")
         super(NormalizeTask, self).__init__(start_section, end_section, img_src_cv_path, resin_cv_path)
 
@@ -45,7 +46,8 @@ class NormalizeTask(RegisteredTask):
 def normalize_section_range(
     start_section, end_section, img_dst_cv_path, img_src_cv_path, resin_cv_path
 ):
-    resin_mip = 7
+    resin_cv_path = 'gs://zetta_aibs_human_unaligned/misc/fake_resin'
+    resin_mip = 6
     img_mip = 6
 
     img_src_cv = cv.CloudVolume(
@@ -85,8 +87,10 @@ def normalize_section_range(
 
     resin_scale_factor = 2 ** (resin_mip - img_mip)
 
-    cv_xy_start = [0, 0]
-    cv_xy_end = [8192, 8192]
+    # cv_xy_start = [0, 0]
+    # cv_xy_end = [8192, 8192]
+    cv_xy_start = [2048, 0]
+    cv_xy_end = [10240, 8192]
     spoof_sample = {"src": None, "tgt": None}
 
     for z in range(start_section, end_section):
@@ -162,11 +166,12 @@ if __name__ == "__main__":
             work(tq, int(sys.argv[3]))
         elif sys.argv[1] == "master":
             # TODO: proper argument parsing
-            start = int(sys.argv[5])
-            end = int(sys.argv[6])
+            resin_cv_path = sys.argv[6] if len(sys.argv) > 6 else None
+            start = int(sys.argv[4])
+            end = int(sys.argv[5])
             for i in range(start, end):
                 tq.insert(
                     NormalizeTask(
-                        start_section=i, end_section=1 + i, img_src_cv_path=sys.argv[3], resin_cv_path=sys.argv[4]
+                        start_section=i, end_section=1 + i, img_src_cv_path=sys.argv[3], resin_cv_path=resin_cv_path
                     )
                 )
